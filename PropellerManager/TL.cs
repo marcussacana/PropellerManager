@@ -23,14 +23,14 @@ namespace PropellerManager {
                     String = String.Substring(Prefix.Length, String.Length - Prefix.Length);
                 }
 
-                if (String.Trim().StartsWith("[") && String.Contains("]")) {
+                if ((String.Trim().StartsWith("[") || String.Trim().StartsWith("\"[")) && String.Contains("]")) {
                     string Pf = String.Substring(0, String.IndexOf("]") + 1);
                     String = String.Substring(Pf.Length, String.Length - Pf.Length);
                     Prefix += Pf;
                 }
 
                 this.Prefix[i] = Prefix;
-                Strings[i] = String.Replace("_r", "\n");
+                Strings[i] = String.Replace("_r", "\r").Replace("_n", "\n");
             }
 
             return Strings;
@@ -38,7 +38,7 @@ namespace PropellerManager {
 
         public byte[] Export(string[] Strings) {
             for (int i = 0; i < Strings.Length; i++) {
-                Strings[i] = Prefix[i] + Strings[i].Replace("\n", "_r");
+                Strings[i] = Prefix[i] + Strings[i].Replace("\r", "_r").Replace("\n", "_n");
             }
 
             return Editor.Export(Strings);

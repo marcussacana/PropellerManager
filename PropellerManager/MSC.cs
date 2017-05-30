@@ -6,8 +6,8 @@ using System.Text;
 namespace PropellerManager {
     public class MSCStringEditor {
 
-        //public Encoding Encoding = Encoding.GetEncoding(932);//sjis
-        public Encoding Encoding = Encoding.Default;//ansi, wtf
+        //public Encoding Encoding = Encoding.GetEncoding(932);//sjis JANAI
+        public Encoding Encoding = Encoding.GetEncoding(1252);//LATIN ANSI DESU
 
 
         byte[] Script;
@@ -16,24 +16,35 @@ namespace PropellerManager {
         List<uint> Offsets;
         public string[] Import() {
             List<string> Strings = new List<string>();
+            uint AtualId = 0;
+            uint LID = 0;
             Offsets = new List<uint>();
-            uint AOP = 0;
-            byte[] OP = GetStrOp((uint)Strings.LongCount());
-
             for (uint i = 0; i < Script.Length; i++) {
-                if (AOP != Strings.LongCount()) {
-                    AOP++;
-                    OP = GetStrOp(AOP);
-                }
+                bool Flag = false;
 
-                if (EqualsAt(Script, OP, i)) {
-                    i += (uint)OP.Length;
+                //10 = Max Miss Index Distance
+                //Big Values: Less rigid string detection; 
+                //Small Values: More rigid string detection;
+                for (uint x = 0; x < 10; x++)
+                    if (EqualsAt(Script, GetStrOp(AtualId + x), i)) { 
+                        Flag = true;
+                        LID = AtualId;
+                        AtualId += x;
+                        break;
+                    }
+
+                if (Flag) {
+                    uint oi = i;
+                    i += 7;//+= GetStrOp(0).Length;
+                    
                     Offsets.Add(i);
                     string String = string.Empty;
                     try { GetString(out String, ref i); }
                     catch { }
                     if (string.IsNullOrWhiteSpace(String) || String.Contains("\u0006") || String.Contains("\x0") || String == "\\n") {
                         Offsets.RemoveAt(Offsets.Count - 1);
+                        i = oi;
+                        AtualId = LID;
                         continue;
                     }
                     Strings.Add(String);
