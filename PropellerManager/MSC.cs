@@ -81,8 +81,18 @@ namespace PropellerManager {
         }
 
         private void CompileOffsets(ref byte[] Script, uint[] Offsets) {
-            for (uint i = 0; i < Offsets.Length; i++)
-                BitConverter.GetBytes(Offsets[i]).CopyTo(Script, (i * 4) + 0xF);
+            uint index = 0x6;
+            uint Offset = 0;
+            for (int x = 0; x < 2; x++) {
+                uint loops = (GetDW(index) / 9);//wtf count
+                index += 4;
+                for (uint l = 0; l < loops; l++) {
+                    index++;//dummy?
+                    index += 4;//offset id?
+                    BitConverter.GetBytes(Offsets[Offset++]).CopyTo(Script, index);
+                    index += 4;//offset
+                }
+            }
         }
 
         private void UpdateOffsets(ref List<uint> Offsets, uint Offset, int Difference) {
@@ -101,10 +111,18 @@ namespace PropellerManager {
 
         private List<uint> GetLabels() {
             ByteCodeStart = GetDW(2);
-            
             List<uint> Labels = new List<uint>();
-            for (uint i = 0xF; i < ByteCodeStart; i += 4)
-                Labels.Add(GetDW(i));
+            uint index = 0x6;
+            for (int x = 0; x < 2; x++) {
+                uint loops = (GetDW(index) / 9);//wtf count
+                index += 4;
+                for (uint l = 0; l < loops; l++) {
+                    index++;//dummy?
+                    index += 4;//offset id?
+                    Labels.Add(GetDW(index));
+                    index += 4;//offset
+                }
+            }
             return Labels;
         }
 
