@@ -13,9 +13,12 @@ namespace PropellerManager {
         byte[] Script;
         public MSCStringEditor(byte[] Script) => this.Script = Script;
 
+        List<uint> LabelsOffsets;
         List<uint> Offsets;
+        uint ByteCodeStart = 0;
         public string[] Import() {
             List<string> Strings = new List<string>();
+            LabelsOffsets = GetLabels();
             uint AtualId = 0;
             uint LID = 0;
             Offsets = new List<uint>();
@@ -58,15 +61,34 @@ namespace PropellerManager {
             byte[] OutScript = new byte[Script.Length];
             Script.CopyTo(OutScript, 0);
 
+            List<uint> NewLabels = new List<uint>(LabelsOffsets.ToArray());
+
             for (int i = Strings.Length - 1; i >= 0; i--) {
                 uint Offset = Offsets[i];
                 uint Len = GetStringLength(Offset);
                 OutScript = CutRegion(OutScript, Offset, Len);
                 byte[] String = CompileString(Strings[i]);
                 OutScript = InsertArray(OutScript, String, Offset);
+                int Diff = String.Length - (int)Len;
+
+
+                UpdateOffsets(ref NewLabels, Offset, Diff);
             }
 
+            CompileOffsets(ref OutScript, NewLabels.ToArray());
+
             return OutScript;
+        }
+
+        private void CompileOffsets(ref byte[] Script, uint[] Offsets) {
+            for (uint i = 0; i < Offsets.Length; i++)
+                BitConverter.GetBytes(Offsets[i]).CopyTo(Script, (i * 4) + 0xF);
+        }
+
+        private void UpdateOffsets(ref List<uint> Offsets, uint Offset, int Difference) {
+            for (int i = 0; i < Offsets.Count; i++)
+                if (Offsets[i] + ByteCodeStart > Offset)
+                    Offsets[i] = (uint)(Offsets[i] + Difference);
         }
 
         private byte[] CompileString(string String) {
@@ -77,12 +99,25 @@ namespace PropellerManager {
             return Out;
         }
 
-        private void GetString(out string String, ref uint Index) {
-            byte[] DW = new byte[4];
-            for (int i = 0; i < 4; i++)
-                DW[i] = Script[Index++];
+        private List<uint> GetLabels() {
+            ByteCodeStart = GetDW(2);
+            
+            List<uint> Labels = new List<uint>();
+            for (uint i = 0xF; i < ByteCodeStart; i += 4)
+                Labels.Add(GetDW(i));
+            return Labels;
+        }
 
-            uint Len = BitConverter.ToUInt32(DW, 0);
+        private uint GetDW(uint pos) {
+            byte[] DW = new byte[4];
+            for (uint i = 0; i < DW.Length; i++)
+                DW[i] = Script[pos + i];
+            return BitConverter.ToUInt32(DW, 0);
+        }
+
+        private void GetString(out string String, ref uint Index) {
+            uint Len = GetDW(Index);
+            Index += 4;
 
             byte[] Buffer = new byte[Len];
             for (uint i = 0; i < Len; i++)
