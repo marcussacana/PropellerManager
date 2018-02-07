@@ -11,7 +11,7 @@ namespace PropellerManager {
 
 
         byte[] Script;
-        public MSCStringEditor(byte[] Script) => this.Script = Script;
+        public MSCStringEditor(byte[] Script) { this.Script = Script; }
 
         List<uint> LabelsOffsets;
         List<uint> Offsets;

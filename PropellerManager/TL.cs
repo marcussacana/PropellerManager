@@ -6,7 +6,7 @@ using System.Text;
 namespace PropellerManager {
     public class MSCTL {
         MSCStringEditor Editor;
-        public MSCTL(byte[] Script) => Editor = new MSCStringEditor(Script);
+        public MSCTL(byte[] Script) { Editor = new MSCStringEditor(Script); }
 
         Dictionary<int, string> Prefix = new Dictionary<int, string>();
 
